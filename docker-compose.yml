@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  caregiver-shift-tracker:
+    container_name: caregiver-shift-tracker
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "6000:6000"
+    environment:
+      DB_HOST: "hkup-db-service"
+      DB_PORT: "3306"
+      MYSQL_USER: "hkupuser"
+      MYSQL_PASSWORD: "hkuppass2030"
+      MYSQL_DATABASE: "caregiver_db"
+      REDIS_HOST: "redis-ec"
+      REDIS_PORT: "6379"
+      REDIS_PASSWORD: ""
+      JWT_SECRET: "2u2Uv2ZbGCvXq6MsFu8BxSg1MuZQevVav/YLop+LCxs="
+      SENDER_MAIL: "kipronoalex2030@gmail.com"
+      MAIL_PASS: "bveh lfph sobe znsc"
+      SMTP_SERVER: "smtp.gmail.com"
+      TOKEN_TTL: 3600
+      JWT_PRIVATE_KEY: "2u2Uv2ZbGCvXq6MsFu8BxSg1MuZQevVav/YLop+LCxs="
+    volumes:
+      - .:/app
+    networks:
+      - e-c-deployerscript_e-commerce-network
+
+networks:
+  e-c-deployerscript_e-commerce-network:
+    external: true

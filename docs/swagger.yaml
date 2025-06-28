@@ -1,0 +1,11 @@
+basePath: /
+host: localhost:6000
+info:
+  contact:
+    email: kiprono@example.com
+    name: Kiprono Bera
+  description: API for Electronic Visit Verification and caregiver scheduling
+  title: Caregiver Shift Tracker API
+  version: "1.0"
+paths: {}
+swagger: "2.0"

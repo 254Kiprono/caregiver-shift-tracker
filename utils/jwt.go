@@ -1,0 +1,112 @@
+package utils
+
+import (
+	"caregiver-shift-tracker/config"
+	"errors"
+	"time"
+
+	"github.com/golang-jwt/jwt/v4"
+)
+
+var cfg = config.LoadConfig()
+
+type contextKey string
+
+const (
+	UserIDKey contextKey = "user_id"
+	RoleIDKey contextKey = "role_id"
+)
+
+var (
+	JWTSecret        = []byte(cfg.JWTSecretKey)
+	RefreshJWTSecret = []byte(cfg.JWTRefreshKey)
+)
+
+// Claims structure
+type Claims struct {
+	UserID int `json:"user_id"`
+	RoleID int `json:"role_id"`
+	jwt.RegisteredClaims
+}
+
+// GenerateJWT generates an access and refresh token
+func GenerateJWT(userID int, roleID int) (string, string, error) {
+	// Create the access token
+	accessTokenClaims := &Claims{
+		UserID: userID,
+		RoleID: roleID,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 1)),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+		},
+	}
+	accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, accessTokenClaims)
+	signedAccessToken, err := accessToken.SignedString(JWTSecret)
+	if err != nil {
+		return "", "", err
+	}
+
+	// Create the refresh token
+	refreshTokenClaims := &Claims{
+		UserID: userID,
+		RoleID: roleID,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 24 * 7)),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+		},
+	}
+	refreshToken := jwt.NewWithClaims(jwt.SigningMethodHS256, refreshTokenClaims)
+	signedRefreshToken, err := refreshToken.SignedString(RefreshJWTSecret)
+	if err != nil {
+		return "", "", err
+	}
+
+	return signedAccessToken, signedRefreshToken, nil
+}
+
+// ParseToken validates a token and extracts claims
+func ParseToken(tokenString string, isRefresh bool) (*Claims, error) {
+	secret := JWTSecret
+	if isRefresh {
+		secret = RefreshJWTSecret
+	}
+
+	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
+		return secret, nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	if claims, ok := token.Claims.(*Claims); ok && token.Valid {
+		return claims, nil
+	}
+
+	return nil, errors.New("invalid token")
+}
+
+// ExtractJWT parses a JWT token and extracts the user ID and role ID from its claims.
+func ExtractJWT(tokenString string, isRefresh bool) (int, int, error) {
+	secret := []byte(cfg.JWTSecretKey)
+	if isRefresh {
+		secret = []byte(cfg.JWTRefreshKey)
+	}
+
+	// Parse the token using the same Claims struct
+	claims := &Claims{}
+	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+		return secret, nil
+	})
+
+	// Validate the token
+	if err != nil || !token.Valid {
+		return 0, 0, errors.New("invalid token")
+	}
+
+	return claims.UserID, claims.RoleID, nil
+}
+
+func InitJWTConfig(c *config.Config) {
+	cfg = c
+}
