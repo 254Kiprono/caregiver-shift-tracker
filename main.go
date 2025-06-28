@@ -26,42 +26,45 @@ import (
 )
 
 func main() {
-	gin.SetMode(gin.ReleaseMode)
+	fmt.Println("🚀 Starting Caregiver Shift Tracker service...")
 
-	// Set up Gin router
+	gin.SetMode(gin.ReleaseMode)
 	r := gin.Default()
+
 	r.Use(gin.Recovery(), gin.Logger(), logger.Logger())
 
-	// Load DB config
 	cfg := config.LoadConfig()
+	fmt.Printf("✅ Loaded config: DB_HOST=%s | REDIS_HOST=%s\n", cfg.DBHost, cfg.RedisHost)
 
 	utils.InitJWTConfig(cfg)
 
-	// Initialize DB
+	// DB Init
 	db, err := database.InitializeDB(cfg)
 	if err != nil {
+		fmt.Printf("❌ DB init error: %v\n", err)
 		logger.ErrorLogger.Fatalf("Failed to initialize database: %v", err)
 	}
+	fmt.Println("✅ Database initialized.")
 
-	// Initialize Redis connection
 	database.RedisConn()
 	rdb := database.RedisInstance()
+	fmt.Println("✅ Redis connected.")
 
-	// Attach DB to context
 	r.Use(database.DBMiddleware(db))
 
-	// Set up the Service and route
 	authService := &controller.Controller{DB: db, RDB: rdb}
 	routes.SetUpRoutes(r, authService, db)
 
+	// Swagger docs
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+	fmt.Println("✅ Swagger route set.")
 
 	// Start server
 	port := os.Getenv("SYSTEM_PORT")
 	if port == "" {
 		port = "6000"
 	}
-	fmt.Println("Server starting at port: " + port)
+	fmt.Println("✅ Server starting at port: " + port)
 	if err := r.Run(":" + port); err != nil {
 		logger.ErrorLogger.Fatalf("Failed to start server: %v", err)
 	}
