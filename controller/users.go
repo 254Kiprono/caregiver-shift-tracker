@@ -102,3 +102,47 @@ func (c *Controller) LoginUser(ctx *gin.Context) {
 		},
 	})
 }
+
+func (c *Controller) RegAdmin(ctx *gin.Context) {
+	var req models.RegisterUserRequest
+
+	// Bind and validate request body
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request", "details": err.Error()})
+		return
+	}
+
+	validate := validator.New()
+	if err := validate.Struct(req); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Validation failed", "details": err.Error()})
+		return
+	}
+
+	// Hash password
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Password encryption failed"})
+		return
+	}
+
+	// Prepare admin user data
+	user := &models.User{
+		Email:    req.Email,
+		Password: string(hashedPassword),
+		FullName: req.FullName,
+		Mobile:   req.Mobile,
+		RoleID:   models.ROLE_ADMIN,
+	}
+
+	// Save to database
+	if _, err := service.RegisterUser(c.DB, user); err != nil {
+		if errors.Is(err, gorm.ErrDuplicatedKey) {
+			ctx.JSON(http.StatusConflict, gin.H{"error": "Email already registered"})
+		} else {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to register admin", "details": err.Error()})
+		}
+		return
+	}
+
+	ctx.JSON(http.StatusCreated, gin.H{"message": "Admin registered successfully"})
+}
