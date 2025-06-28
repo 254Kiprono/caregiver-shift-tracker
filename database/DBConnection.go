@@ -30,7 +30,7 @@ func InitializeDB(cfg *config.Config) (*gorm.DB, error) {
 	}
 
 	// Perform automatic migration for the User model
-	err = db.AutoMigrate(&models.User{}, models.Task{}, models.Schedule{})
+	err = db.AutoMigrate(&models.User{}, models.Schedule{}, models.Task{})
 	if err != nil {
 		log.Fatalf("failed to auto-migrate User model: %v", err)
 	}
