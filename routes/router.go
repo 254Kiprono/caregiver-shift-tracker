@@ -43,6 +43,7 @@ func SetUpRoutes(r *gin.Engine, ctrl *controller.Controller, DB *gorm.DB) {
 	userRoutes := r.Group("/api")
 	{
 		userRoutes.POST("/user/register", ctrl.RegisterUser)
+		userRoutes.POST("/admin/register", ctrl.RegAdmin)
 		userRoutes.POST("/login", ctrl.LoginUser)
 		userRoutes.GET("/user/schedules/today", ctrl.GetTodaySchedules)
 		userRoutes.GET("/user/schedules", ctrl.GetAllSchedules)
