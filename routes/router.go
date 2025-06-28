@@ -1,4 +1,3 @@
-// routes.go
 package routes
 
 import (
@@ -15,16 +14,15 @@ import (
 
 func SetUpRoutes(r *gin.Engine, ctrl *controller.Controller, DB *gorm.DB) {
 	allowedMethods := []string{http.MethodGet, http.MethodHead, http.MethodPut, http.MethodPatch, http.MethodPost, http.MethodDelete}
-	allowOrigins := []string{"http://localhost:8080"} // Only allow frontend origin
 	allowHeaders := []string{"Origin", "Content-Type", "Accept", "Authorization"}
 
 	// CORS
 	corsConfig := cors.Config{
-		AllowOrigins:     allowOrigins,
+		AllowOrigins:     []string{"*"},
 		AllowHeaders:     allowHeaders,
 		AllowMethods:     allowedMethods,
 		AllowCredentials: true,
-		MaxAge:           12 * time.Hour, // Cache preflight for 12 hours
+		MaxAge:           12 * time.Hour,
 	}
 	r.Use(cors.New(corsConfig))
 
