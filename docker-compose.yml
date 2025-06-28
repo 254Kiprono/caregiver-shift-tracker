@@ -11,12 +11,12 @@ services:
     environment:
       DB_HOST: "hkup-db-service"
       DB_PORT: "3306"
-      MYSQL_USER: "hkupuser"
+      MYSQL_USER: "care_giveruser"
       MYSQL_PASSWORD: "hkuppass2030"
       MYSQL_DATABASE: "caregiver_db"
       REDIS_HOST: "redis-ec"
       REDIS_PORT: "6379"
-      REDIS_PASSWORD: ""
+      REDIS_PASSWORD: 
       JWT_SECRET: "2u2Uv2ZbGCvXq6MsFu8BxSg1MuZQevVav/YLop+LCxs="
       SENDER_MAIL: "kipronoalex2030@gmail.com"
       MAIL_PASS: "bveh lfph sobe znsc"
