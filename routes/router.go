@@ -38,6 +38,7 @@ func SetUpRoutes(r *gin.Engine, ctrl *controller.Controller, DB *gorm.DB) {
 		admin.POST("/assign/:id", ctrl.AssignTasksToSchedule)
 		admin.DELETE("/:id", ctrl.DeleteTask)
 		admin.PUT("/:id", ctrl.UpdateTask)
+		admin.POST("/create/schedule", ctrl.CreateSchedule)
 	}
 
 	userRoutes := r.Group("/api")

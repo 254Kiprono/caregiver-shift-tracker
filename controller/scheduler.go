@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"caregiver-shift-tracker/logger"
 	"caregiver-shift-tracker/models"
 	"caregiver-shift-tracker/service"
 	"net/http"
@@ -8,6 +9,46 @@ import (
 
 	"github.com/gin-gonic/gin"
 )
+
+// CreateSchedule godoc
+// @Summary Create a schedule
+// @Description Admin creates a new schedule for a caregiver
+// @Tags Schedules
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param request body models.Schedule true "Schedule Info"
+// @Success 201 {object} map[string]interface{}
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /tasks/create/schedule [post]
+func (ctrl *Controller) CreateSchedule(ctx *gin.Context) {
+	var req models.Schedule
+
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request data", "details": err.Error()})
+		return
+	}
+
+	if req.StartTime != nil && req.EndTime != nil && req.StartTime.After(*req.EndTime) {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Shift start time must be before end time"})
+		return
+	}
+
+	if err := service.CreateSchedule(ctrl.DB, &req); err != nil {
+		logger.ErrorLogger.Printf("Failed to create schedule: %v", err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create schedule", "details": err.Error()})
+		return
+	}
+
+	userID := ctx.GetInt("user_id")
+
+	ctx.JSON(http.StatusCreated, gin.H{
+		"message":     "Schedule created successfully",
+		"schedule_id": req.ID,
+		"user_id":     userID,
+	})
+}
 
 // GetAllSchedules godoc
 // @Summary Get all schedules

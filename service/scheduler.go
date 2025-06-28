@@ -7,6 +7,11 @@ import (
 	"gorm.io/gorm"
 )
 
+// CreateSchedule adds a new schedule to the database
+func CreateSchedule(db *gorm.DB, schedule *models.Schedule) error {
+	return db.Create(schedule).Error
+}
+
 func GetAllSchedules(db *gorm.DB, userID int) ([]models.Schedule, error) {
 	var schedules []models.Schedule
 	err := db.Preload("Tasks").Where("user_id = ?", userID).Find(&schedules).Error
