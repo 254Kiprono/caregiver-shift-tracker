@@ -15,7 +15,7 @@ const (
 
 type Schedule struct {
 	gorm.Model
-	UserID     int        `gorm:"not null;index:idx_user_schedule" json:"user_id"`
+	UserID     uint       `gorm:"not null;index:idx_user_schedule" json:"user_id"`
 	ClientName string     `gorm:"type:varchar(100);not null" json:"client_name" validate:"required"`
 	Location   string     `gorm:"type:varchar(200);not null" json:"location" validate:"required"`
 	ShiftTime  time.Time  `gorm:"type:datetime;not null;index" json:"shift_time" validate:"required"`
@@ -26,11 +26,8 @@ type Schedule struct {
 	StartLon   *float64   `gorm:"type:decimal(11,8)" json:"start_lon"`
 	EndLat     *float64   `gorm:"type:decimal(10,8)" json:"end_lat"`
 	EndLon     *float64   `gorm:"type:decimal(11,8)" json:"end_lon"`
-	Tasks      []Task     `gorm:"foreignKey:ScheduleID;constraint:OnDelete:CASCADE" json:"tasks"`
 
-	CreatedAt time.Time      `json:"created_at"`
-	UpdatedAt time.Time      `json:"updated_at"`
-	DeletedAt gorm.DeletedAt `gorm:"index" json:"deleted_at,omitempty"`
+	Tasks []Task `gorm:"foreignKey:ScheduleID;constraint:OnDelete:CASCADE" json:"tasks"`
 }
 
 type VisitLocationRequest struct {
