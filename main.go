@@ -21,8 +21,8 @@ import (
 // @title Caregiver Shift Tracker API
 // @version 1.0
 // @description API for Electronic Visit Verification and caregiver scheduling
-// @contact.name Kiprono Bera
-// @contact.url http://care-giver.devsinkenya.com
+// @contact.name Devs In Kenya
+// @contact.url http://devsinkenya.com
 // @BasePath /
 // @securityDefinitions.apikey BearerAuth
 // @in header

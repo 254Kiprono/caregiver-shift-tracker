@@ -86,8 +86,8 @@ definitions:
     type: object
 info:
   contact:
-    name: Kiprono Bera
-    url: http://care-giver.devsinkenya.com
+    name: Devs In Kenya
+    url: http://devsinkenya.com
   description: API for Electronic Visit Verification and caregiver scheduling
   title: Caregiver Shift Tracker API
   version: "1.0"

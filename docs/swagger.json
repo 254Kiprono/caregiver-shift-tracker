@@ -4,8 +4,8 @@
         "description": "API for Electronic Visit Verification and caregiver scheduling",
         "title": "Caregiver Shift Tracker API",
         "contact": {
-            "name": "Kiprono Bera",
-            "url": "http://care-giver.devsinkenya.com"
+            "name": "Devs In Kenya",
+            "url": "http://devsinkenya.com"
         },
         "version": "1.0"
     },

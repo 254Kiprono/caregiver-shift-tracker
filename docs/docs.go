@@ -10,8 +10,8 @@ const docTemplate = `{
         "description": "{{escape .Description}}",
         "title": "{{.Title}}",
         "contact": {
-            "name": "Kiprono Bera",
-            "url": "http://care-giver.devsinkenya.com"
+            "name": "Devs In Kenya",
+            "url": "http://devsinkenya.com"
         },
         "version": "{{.Version}}"
     },
