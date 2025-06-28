@@ -3,6 +3,7 @@ package routes
 import (
 	"caregiver-shift-tracker/controller"
 	"caregiver-shift-tracker/logger"
+	"caregiver-shift-tracker/utils"
 	"net/http"
 
 	"github.com/gin-contrib/cors"
@@ -26,6 +27,15 @@ func SetUpRoutes(r *gin.Engine, ctrl *controller.Controller, DB *gorm.DB) {
 		logger.InfoLogger.Println("System Health Status Check Successful")
 		c.JSON(http.StatusOK, gin.H{"message": "System Health Status Check Successful"})
 	})
+
+	admin := r.Group("/tasks")
+	admin.Use(utils.AdminOnly())
+	{
+		admin.POST("/", ctrl.CreateTask)
+		admin.POST("/assign/:id", ctrl.AssignTasksToSchedule)
+		admin.DELETE("/:id", ctrl.DeleteTask)
+		admin.PUT("/:id", ctrl.UpdateTask)
+	}
 
 	userRoutes := r.Group("/api")
 	{

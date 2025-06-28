@@ -9,30 +9,55 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// GetAllSchedules godoc
+// @Summary Get all schedules
+// @Description Fetch all schedules for the authenticated user
+// @Tags Schedules
+// @Security BearerAuth
+// @Produce json
+// @Success 200 {object} map[string]interface{} "List of schedules"
+// @Failure 500 {object} map[string]string "Server error"
+// @Router /schedules [get]
 func (c *Controller) GetAllSchedules(ctx *gin.Context) {
 	userID := ctx.GetInt("user_id")
-
 	schedules, err := service.GetAllSchedules(c.DB, userID)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch schedules"})
 		return
 	}
-
 	ctx.JSON(http.StatusOK, gin.H{"schedules": schedules})
 }
 
+// GetTodaySchedules godoc
+// @Summary Get today's schedules
+// @Description Fetch today's schedules for the authenticated user
+// @Tags Schedules
+// @Security BearerAuth
+// @Produce json
+// @Success 200 {object} map[string]interface{} "List of today's schedules"
+// @Failure 500 {object} map[string]string "Server error"
+// @Router /schedules/today [get]
 func (ctrl *Controller) GetTodaySchedules(ctx *gin.Context) {
 	userID := ctx.GetInt("user_id")
-
 	schedules, err := service.GetTodaySchedules(ctrl.DB, userID)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch today's schedules"})
 		return
 	}
-
 	ctx.JSON(http.StatusOK, gin.H{"schedules": schedules})
 }
 
+// GetScheduleDetails godoc
+// @Summary Get schedule details
+// @Description Fetch a specific schedule by ID
+// @Tags Schedules
+// @Security BearerAuth
+// @Produce json
+// @Param id path int true "Schedule ID"
+// @Success 200 {object} models.Schedule "Schedule details"
+// @Failure 400 {object} map[string]string "Invalid ID"
+// @Failure 404 {object} map[string]string "Not found"
+// @Router /schedules/{id} [get]
 func (ctrl *Controller) GetScheduleDetails(ctx *gin.Context) {
 	idParam := ctx.Param("id")
 	id, err := strconv.Atoi(idParam)
@@ -40,16 +65,27 @@ func (ctrl *Controller) GetScheduleDetails(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid schedule ID"})
 		return
 	}
-
 	schedule, err := service.GetScheduleByID(ctrl.DB, uint(id))
 	if err != nil {
 		ctx.JSON(http.StatusNotFound, gin.H{"error": "Schedule not found"})
 		return
 	}
-
 	ctx.JSON(http.StatusOK, schedule)
 }
 
+// StartVisit godoc
+// @Summary Start visit
+// @Description Start a visit for a specific schedule by ID
+// @Tags Schedules
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param id path int true "Schedule ID"
+// @Param request body models.VisitLocationRequest true "Start location coordinates"
+// @Success 200 {object} map[string]string "Visit started"
+// @Failure 400 {object} map[string]string "Invalid request"
+// @Failure 500 {object} map[string]string "Server error"
+// @Router /schedules/start/{id} [post]
 func (ctrl *Controller) StartVisit(ctx *gin.Context) {
 	idParam := ctx.Param("id")
 	id, err := strconv.Atoi(idParam)
@@ -57,22 +93,32 @@ func (ctrl *Controller) StartVisit(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid schedule ID"})
 		return
 	}
-
 	var req models.VisitLocationRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid location data"})
 		return
 	}
-
 	err = service.StartVisit(ctrl.DB, uint(id), req.Latitude, req.Longitude)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to start visit"})
 		return
 	}
-
 	ctx.JSON(http.StatusOK, gin.H{"message": "Visit started"})
 }
 
+// EndVisit godoc
+// @Summary End visit
+// @Description End a visit for a specific schedule by ID
+// @Tags Schedules
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param id path int true "Schedule ID"
+// @Param request body models.VisitLocationRequest true "End location coordinates"
+// @Success 200 {object} map[string]string "Visit ended"
+// @Failure 400 {object} map[string]string "Invalid request"
+// @Failure 500 {object} map[string]string "Server error"
+// @Router /schedules/end/{id} [post]
 func (ctrl *Controller) EndVisit(ctx *gin.Context) {
 	idParam := ctx.Param("id")
 	id, err := strconv.Atoi(idParam)
@@ -80,18 +126,15 @@ func (ctrl *Controller) EndVisit(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid schedule ID"})
 		return
 	}
-
 	var req models.VisitLocationRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid location data"})
 		return
 	}
-
 	err = service.EndVisit(ctrl.DB, uint(id), req.Latitude, req.Longitude)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to end visit"})
 		return
 	}
-
 	ctx.JSON(http.StatusOK, gin.H{"message": "Visit ended"})
 }

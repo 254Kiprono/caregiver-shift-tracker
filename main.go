@@ -8,14 +8,26 @@ import (
 	"caregiver-shift-tracker/routes"
 	"caregiver-shift-tracker/utils"
 
+	_ "caregiver-shift-tracker/docs"
+
 	"fmt"
 	"os"
 
 	"github.com/gin-gonic/gin"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
+// @title Caregiver Shift Tracker API
+// @version 1.0
+// @description API for Electronic Visit Verification and caregiver scheduling
+// @contact.name Kiprono Bera
+// @contact.url http://care-giver.devsinkenya.com
+// @BasePath /
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
 func main() {
-
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.Default()
 
@@ -42,6 +54,9 @@ func main() {
 
 	authService := &controller.Controller{DB: db, RDB: rdb}
 	routes.SetUpRoutes(r, authService, db)
+
+	//Swagger endpoint
+	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	// Start server
 	port := os.Getenv("SYSTEM_PORT")

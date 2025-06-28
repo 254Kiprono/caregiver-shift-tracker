@@ -2,9 +2,13 @@ package utils
 
 import (
 	"caregiver-shift-tracker/config"
+	"caregiver-shift-tracker/logger"
 	"errors"
+	"net/http"
+	"strings"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v4"
 )
 
@@ -105,6 +109,37 @@ func ExtractJWT(tokenString string, isRefresh bool) (int, int, error) {
 	}
 
 	return claims.UserID, claims.RoleID, nil
+}
+
+// AdminOnly ensures the request has a valid JWT and admin access (RoleID = 1)
+func AdminOnly() gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		authHeader := ctx.GetHeader("Authorization")
+		if authHeader == "" || !strings.HasPrefix(authHeader, "Bearer ") {
+			logger.RespondRaw(ctx, http.StatusUnauthorized, gin.H{"error": "Authorization header missing or invalid"})
+			ctx.Abort()
+			return
+		}
+
+		token := strings.TrimPrefix(authHeader, "Bearer ")
+		userID, roleID, err := ExtractJWT(token, false)
+		if err != nil {
+			logger.RespondRaw(ctx, http.StatusUnauthorized, gin.H{"error": "Invalid or expired token", "details": err.Error()})
+			ctx.Abort()
+			return
+		}
+
+		if roleID != 1 {
+			logger.RespondRaw(ctx, http.StatusForbidden, gin.H{"error": "Access denied: Admin role required"})
+			ctx.Abort()
+			return
+		}
+
+		// Pass user info to context
+		ctx.Set("user_id", userID)
+		ctx.Set("role_id", roleID)
+		ctx.Next()
+	}
 }
 
 func InitJWTConfig(c *config.Config) {
