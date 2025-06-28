@@ -1,3 +1,4 @@
+// routes.go
 package routes
 
 import (
@@ -5,6 +6,7 @@ import (
 	"caregiver-shift-tracker/logger"
 	"caregiver-shift-tracker/utils"
 	"net/http"
+	"time"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -13,13 +15,16 @@ import (
 
 func SetUpRoutes(r *gin.Engine, ctrl *controller.Controller, DB *gorm.DB) {
 	allowedMethods := []string{http.MethodGet, http.MethodHead, http.MethodPut, http.MethodPatch, http.MethodPost, http.MethodDelete}
-	AllowOrigins := []string{"*"}
+	allowOrigins := []string{"http://localhost:8080"} // Only allow frontend origin
+	allowHeaders := []string{"Origin", "Content-Type", "Accept", "Authorization"}
 
 	// CORS
 	corsConfig := cors.Config{
-		AllowOrigins: AllowOrigins,
-		AllowHeaders: AllowOrigins,
-		AllowMethods: allowedMethods,
+		AllowOrigins:     allowOrigins,
+		AllowHeaders:     allowHeaders,
+		AllowMethods:     allowedMethods,
+		AllowCredentials: true,
+		MaxAge:           12 * time.Hour, // Cache preflight for 12 hours
 	}
 	r.Use(cors.New(corsConfig))
 
@@ -47,5 +52,4 @@ func SetUpRoutes(r *gin.Engine, ctrl *controller.Controller, DB *gorm.DB) {
 		userRoutes.POST("/user/schedules/:id/start", ctrl.StartVisit)
 		userRoutes.POST("/user/schedules/:id/end", ctrl.EndVisit)
 	}
-
 }
