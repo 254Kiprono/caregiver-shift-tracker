@@ -245,3 +245,75 @@ func (ctrl *Controller) EndVisit(ctx *gin.Context) {
 	}
 	ctx.JSON(http.StatusOK, gin.H{"message": "Visit ended"})
 }
+
+// GetUpcomingSchedules godoc
+// @Summary Get upcoming schedules
+// @Description Fetch all upcoming schedules for the authenticated caregiver (from today onward)
+// @Tags Schedules
+// @Security BearerAuth
+// @Produce json
+// @Success 200 {object} map[string]interface{} "List of upcoming schedules"
+// @Failure 401 {object} map[string]string "Unauthorized"
+// @Failure 500 {object} map[string]string "Internal server error"
+// @Router /api/user/schedules/upcoming [get]
+func (ctrl *Controller) GetUpcomingSchedules(ctx *gin.Context) {
+	userID, err := GetUserIDFromJWT(ctx)
+	if err != nil {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		return
+	}
+	schedules, err := service.GetUpcomingSchedules(ctrl.DB, userID)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch upcoming schedules"})
+		return
+	}
+	ctx.JSON(http.StatusOK, gin.H{"schedules": schedules})
+}
+
+// GetMissedSchedules godoc
+// @Summary Get missed schedules
+// @Description Fetch all missed schedules for the authenticated caregiver (end time passed and not completed)
+// @Tags Schedules
+// @Security BearerAuth
+// @Produce json
+// @Success 200 {object} map[string]interface{} "List of missed schedules"
+// @Failure 401 {object} map[string]string "Unauthorized"
+// @Failure 500 {object} map[string]string "Internal server error"
+// @Router /api/user/schedules/missed [get]
+func (ctrl *Controller) GetMissedSchedules(ctx *gin.Context) {
+	userID, err := GetUserIDFromJWT(ctx)
+	if err != nil {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		return
+	}
+	schedules, err := service.GetMissedSchedules(ctrl.DB, userID)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch missed schedules"})
+		return
+	}
+	ctx.JSON(http.StatusOK, gin.H{"schedules": schedules})
+}
+
+// GetTodayCompletedSchedules godoc
+// @Summary Get today's completed schedules
+// @Description Fetch all completed schedules for today for the authenticated caregiver
+// @Tags Schedules
+// @Security BearerAuth
+// @Produce json
+// @Success 200 {object} map[string]interface{} "List of today's completed schedules"
+// @Failure 401 {object} map[string]string "Unauthorized"
+// @Failure 500 {object} map[string]string "Internal server error"
+// @Router /api/user/schedules/completed/today [get]
+func (ctrl *Controller) GetTodayCompletedSchedules(ctx *gin.Context) {
+	userID, err := GetUserIDFromJWT(ctx)
+	if err != nil {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		return
+	}
+	schedules, err := service.GetTodayCompletedSchedules(ctrl.DB, userID)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch completed schedules"})
+		return
+	}
+	ctx.JSON(http.StatusOK, gin.H{"schedules": schedules})
+}

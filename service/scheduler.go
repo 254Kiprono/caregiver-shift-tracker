@@ -58,3 +58,31 @@ func EndVisit(db *gorm.DB, scheduleID uint, lat, lon float64) error {
 			"status":   models.SCHEDULE_STATUS_COMPLETED,
 		}).Error
 }
+
+func GetUpcomingSchedules(db *gorm.DB, userID int) ([]models.Schedule, error) {
+	today := time.Now().Truncate(24 * time.Hour)
+	var schedules []models.Schedule
+	err := db.Preload("Tasks").
+		Where("user_id = ? AND shift_time >= ?", userID, today).
+		Find(&schedules).Error
+	return schedules, err
+}
+
+func GetMissedSchedules(db *gorm.DB, userID int) ([]models.Schedule, error) {
+	now := time.Now()
+	var schedules []models.Schedule
+	err := db.Preload("Tasks").
+		Where("user_id = ? AND shift_end < ? AND status != ?", userID, now, "completed").
+		Find(&schedules).Error
+	return schedules, err
+}
+
+func GetTodayCompletedSchedules(db *gorm.DB, userID int) ([]models.Schedule, error) {
+	start := time.Now().Truncate(24 * time.Hour)
+	end := start.Add(24 * time.Hour)
+	var schedules []models.Schedule
+	err := db.Preload("Tasks").
+		Where("user_id = ? AND shift_time BETWEEN ? AND ? AND status = ?", userID, start, end, "completed").
+		Find(&schedules).Error
+	return schedules, err
+}
