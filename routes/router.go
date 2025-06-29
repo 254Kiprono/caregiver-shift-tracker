@@ -31,7 +31,7 @@ func SetUpRoutes(r *gin.Engine, ctrl *controller.Controller, DB *gorm.DB) {
 		c.JSON(http.StatusOK, gin.H{"message": "System Health Status Check Successful"})
 	})
 
-	// Task routes (open for testing)
+	// Task routes
 	admin := r.Group("/tasks")
 	{
 		admin.POST("/", ctrl.CreateTask)
@@ -39,6 +39,7 @@ func SetUpRoutes(r *gin.Engine, ctrl *controller.Controller, DB *gorm.DB) {
 		admin.DELETE("/:id", ctrl.DeleteTask)
 		admin.PUT("/:id", ctrl.UpdateTask)
 		admin.POST("/create/schedule", ctrl.CreateSchedule)
+		admin.POST("/:taskId/update", ctrl.UpdateTaskStatus)
 	}
 
 	// User routes
@@ -46,7 +47,7 @@ func SetUpRoutes(r *gin.Engine, ctrl *controller.Controller, DB *gorm.DB) {
 	{
 		userRoutes.POST("/user/register", ctrl.RegisterUser)
 		userRoutes.POST("/admin/register", ctrl.RegAdmin)
-		userRoutes.POST("/login", ctrl.LoginUser)
+		userRoutes.POST("/user/login", ctrl.LoginUser)
 		userRoutes.GET("/user/schedules", ctrl.GetAllSchedules)
 		userRoutes.GET("/user/schedules/today", ctrl.GetTodaySchedules)
 		userRoutes.GET("/user/schedules/:id", ctrl.GetScheduleDetails)
