@@ -66,7 +66,7 @@ func (c *Controller) RegisterUser(ctx *gin.Context) {
 
 // LoginUser godoc
 // @Summary Login a user
-// @Description Authenticate a caregiver and return JWT tokens and profile (user details, schedules, tasks)
+// @Description Authenticate a caregiver and return JWT tokens and basic profile info
 // @Tags Users
 // @Accept json
 // @Produce json
@@ -76,6 +76,7 @@ func (c *Controller) RegisterUser(ctx *gin.Context) {
 // @Failure 401 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /api/user/login [post]
+// @Security BearerAuth
 func (c *Controller) LoginUser(ctx *gin.Context) {
 	var req models.LoginRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
@@ -96,27 +97,21 @@ func (c *Controller) LoginUser(ctx *gin.Context) {
 		return
 	}
 
-	// Generate access and refresh tokens
+	// Generate tokens
 	accessToken, refreshToken, err := utils.GenerateJWT(int(user.ID), user.RoleID)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate tokens", "details": err.Error()})
 		return
 	}
 
-	// Store refresh token in DB
+	// Save refresh token
 	user.RefreshToken = &refreshToken
 	if err := c.DB.Save(&user).Error; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to store refresh token"})
 		return
 	}
 
-	// Fetch schedules with tasks
-	schedules, err := service.GetAllSchedules(c.DB, int(user.ID))
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch schedules"})
-		return
-	}
-
+	// Respond with only essential user info and tokens
 	ctx.JSON(http.StatusOK, gin.H{
 		"message":       "Login successful",
 		"access_token":  accessToken,
@@ -127,7 +122,6 @@ func (c *Controller) LoginUser(ctx *gin.Context) {
 			"full_name": user.FullName,
 			"mobile":    user.Mobile,
 			"role_id":   user.RoleID,
-			"schedules": schedules,
 		},
 	})
 }
