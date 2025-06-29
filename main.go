@@ -20,7 +20,7 @@ import (
 
 // @title Caregiver Shift Tracker API
 // @version 1.0
-// @description API for Electronic Visit Verification and caregiver scheduling
+// @description API for caregiver scheduling and electronic visit verification. All endpoints except /api/user/schedules/* are open for testing; /api/user/schedules/* requires BearerAuth with JWT.
 // @contact.name Devs In Kenya
 // @contact.url http://devsinkenya.com
 // @BasePath /
@@ -34,7 +34,7 @@ func main() {
 	r.Use(gin.Recovery(), gin.Logger(), logger.Logger())
 
 	cfg := config.LoadConfig()
-	fmt.Printf("Loaded config successfully")
+	fmt.Printf("Loaded config successfully\n")
 
 	utils.InitJWTConfig(cfg)
 
@@ -55,7 +55,7 @@ func main() {
 	authService := &controller.Controller{DB: db, RDB: rdb}
 	routes.SetUpRoutes(r, authService, db)
 
-	//Swagger endpoint
+	// Swagger endpoint
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	// Start server

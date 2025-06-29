@@ -2,6 +2,7 @@ package service
 
 import (
 	"caregiver-shift-tracker/models"
+	"time"
 
 	"gorm.io/gorm"
 )
@@ -37,4 +38,28 @@ func DeleteTask(db *gorm.DB, taskID uint) error {
 // UpdateTask updates a specific task in the database
 func UpdateTask(db *gorm.DB, task *models.Task) error {
 	return db.Save(task).Error
+}
+
+// GetScheduleByTaskID retrieves the schedule associated with a task
+func GetScheduleByTaskID(db *gorm.DB, taskID uint) (*models.Schedule, error) {
+	var task models.Task
+	if err := db.First(&task, "id = ?", taskID).Error; err != nil {
+		return nil, err
+	}
+	var schedule models.Schedule
+	if err := db.First(&schedule, "id = ?", task.ScheduleID).Error; err != nil {
+		return nil, err
+	}
+	return &schedule, nil
+}
+
+// UpdateTaskStatus updates the status and reason of a task
+func UpdateTaskStatus(db *gorm.DB, taskID uint, status string, reason *string, completedAt *time.Time) error {
+	return db.Model(&models.Task{}).
+		Where("id = ?", taskID).
+		Updates(map[string]interface{}{
+			"status":       status,
+			"reason":       reason,
+			"completed_at": completedAt,
+		}).Error
 }

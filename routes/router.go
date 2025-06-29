@@ -3,7 +3,6 @@ package routes
 import (
 	"caregiver-shift-tracker/controller"
 	"caregiver-shift-tracker/logger"
-	"caregiver-shift-tracker/utils"
 	"net/http"
 	"time"
 
@@ -26,13 +25,14 @@ func SetUpRoutes(r *gin.Engine, ctrl *controller.Controller, DB *gorm.DB) {
 	}
 	r.Use(cors.New(corsConfig))
 
+	// Health check
 	r.GET("/status", func(c *gin.Context) {
 		logger.InfoLogger.Println("System Health Status Check Successful")
 		c.JSON(http.StatusOK, gin.H{"message": "System Health Status Check Successful"})
 	})
 
+	// Task routes (open for testing)
 	admin := r.Group("/tasks")
-	admin.Use(utils.AdminOnly())
 	{
 		admin.POST("/", ctrl.CreateTask)
 		admin.POST("/assign/:id", ctrl.AssignTasksToSchedule)
@@ -41,13 +41,14 @@ func SetUpRoutes(r *gin.Engine, ctrl *controller.Controller, DB *gorm.DB) {
 		admin.POST("/create/schedule", ctrl.CreateSchedule)
 	}
 
+	// User routes
 	userRoutes := r.Group("/api")
 	{
 		userRoutes.POST("/user/register", ctrl.RegisterUser)
 		userRoutes.POST("/admin/register", ctrl.RegAdmin)
 		userRoutes.POST("/login", ctrl.LoginUser)
-		userRoutes.GET("/user/schedules/today", ctrl.GetTodaySchedules)
 		userRoutes.GET("/user/schedules", ctrl.GetAllSchedules)
+		userRoutes.GET("/user/schedules/today", ctrl.GetTodaySchedules)
 		userRoutes.GET("/user/schedules/:id", ctrl.GetScheduleDetails)
 		userRoutes.POST("/user/schedules/:id/start", ctrl.StartVisit)
 		userRoutes.POST("/user/schedules/:id/end", ctrl.EndVisit)

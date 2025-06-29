@@ -20,48 +20,58 @@ import (
 // @Param request body models.Schedule true "Schedule Info"
 // @Success 201 {object} map[string]interface{}
 // @Failure 400 {object} map[string]string
+// @Failure 401 {object} map[string]string
+// @Failure 403 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /tasks/create/schedule [post]
 func (ctrl *Controller) CreateSchedule(ctx *gin.Context) {
+	_, roleID, err := GetUserIDAndRoleFromJWT(ctx)
+	if err != nil {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		return
+	}
+	if roleID != models.ROLE_ADMIN {
+		ctx.JSON(http.StatusForbidden, gin.H{"error": "Access denied: Admin role required"})
+		return
+	}
 	var req models.Schedule
-
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request data", "details": err.Error()})
 		return
 	}
-
 	if req.StartTime != nil && req.EndTime != nil && req.StartTime.After(*req.EndTime) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Shift start time must be before end time"})
 		return
 	}
-
 	if err := service.CreateSchedule(ctrl.DB, &req); err != nil {
 		logger.ErrorLogger.Printf("Failed to create schedule: %v", err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create schedule", "details": err.Error()})
 		return
 	}
-
-	userID := ctx.GetInt("user_id")
-
 	ctx.JSON(http.StatusCreated, gin.H{
 		"message":     "Schedule created successfully",
 		"schedule_id": req.ID,
-		"user_id":     userID,
+		"user_id":     req.UserID,
 	})
 }
 
 // GetAllSchedules godoc
 // @Summary Get all schedules
-// @Description Fetch all schedules for the authenticated user
+// @Description Fetch all schedules for the authenticated caregiver
 // @Tags Schedules
 // @Security BearerAuth
 // @Produce json
 // @Success 200 {object} map[string]interface{} "List of schedules"
-// @Failure 500 {object} map[string]string "Server error"
-// @Router /schedules [get]
-func (c *Controller) GetAllSchedules(ctx *gin.Context) {
-	userID := ctx.GetInt("user_id")
-	schedules, err := service.GetAllSchedules(c.DB, userID)
+// @Failure 401 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /api/user/schedules [get]
+func (ctrl *Controller) GetAllSchedules(ctx *gin.Context) {
+	userID, err := GetUserIDFromJWT(ctx)
+	if err != nil {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		return
+	}
+	schedules, err := service.GetAllSchedules(ctrl.DB, userID)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch schedules"})
 		return
@@ -71,15 +81,20 @@ func (c *Controller) GetAllSchedules(ctx *gin.Context) {
 
 // GetTodaySchedules godoc
 // @Summary Get today's schedules
-// @Description Fetch today's schedules for the authenticated user
+// @Description Fetch today's schedules for the authenticated caregiver
 // @Tags Schedules
 // @Security BearerAuth
 // @Produce json
 // @Success 200 {object} map[string]interface{} "List of today's schedules"
-// @Failure 500 {object} map[string]string "Server error"
-// @Router /schedules/today [get]
+// @Failure 401 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /api/user/schedules/today [get]
 func (ctrl *Controller) GetTodaySchedules(ctx *gin.Context) {
-	userID := ctx.GetInt("user_id")
+	userID, err := GetUserIDFromJWT(ctx)
+	if err != nil {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		return
+	}
 	schedules, err := service.GetTodaySchedules(ctrl.DB, userID)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch today's schedules"})
@@ -90,16 +105,23 @@ func (ctrl *Controller) GetTodaySchedules(ctx *gin.Context) {
 
 // GetScheduleDetails godoc
 // @Summary Get schedule details
-// @Description Fetch a specific schedule by ID
+// @Description Fetch a specific schedule by ID for the authenticated caregiver
 // @Tags Schedules
 // @Security BearerAuth
 // @Produce json
 // @Param id path int true "Schedule ID"
 // @Success 200 {object} models.Schedule "Schedule details"
 // @Failure 400 {object} map[string]string "Invalid ID"
+// @Failure 401 {object} map[string]string
+// @Failure 403 {object} map[string]string
 // @Failure 404 {object} map[string]string "Not found"
-// @Router /schedules/{id} [get]
+// @Router /api/user/schedules/{id} [get]
 func (ctrl *Controller) GetScheduleDetails(ctx *gin.Context) {
+	userID, err := GetUserIDFromJWT(ctx)
+	if err != nil {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		return
+	}
 	idParam := ctx.Param("id")
 	id, err := strconv.Atoi(idParam)
 	if err != nil {
@@ -109,6 +131,10 @@ func (ctrl *Controller) GetScheduleDetails(ctx *gin.Context) {
 	schedule, err := service.GetScheduleByID(ctrl.DB, uint(id))
 	if err != nil {
 		ctx.JSON(http.StatusNotFound, gin.H{"error": "Schedule not found"})
+		return
+	}
+	if schedule.UserID != uint(userID) {
+		ctx.JSON(http.StatusForbidden, gin.H{"error": "Access denied: Schedule not assigned to user"})
 		return
 	}
 	ctx.JSON(http.StatusOK, schedule)
@@ -125,18 +151,38 @@ func (ctrl *Controller) GetScheduleDetails(ctx *gin.Context) {
 // @Param request body models.VisitLocationRequest true "Start location coordinates"
 // @Success 200 {object} map[string]string "Visit started"
 // @Failure 400 {object} map[string]string "Invalid request"
+// @Failure 401 {object} map[string]string
+// @Failure 403 {object} map[string]string
 // @Failure 500 {object} map[string]string "Server error"
-// @Router /schedules/start/{id} [post]
+// @Router /api/user/schedules/{id}/start [post]
 func (ctrl *Controller) StartVisit(ctx *gin.Context) {
+	userID, err := GetUserIDFromJWT(ctx)
+	if err != nil {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		return
+	}
 	idParam := ctx.Param("id")
 	id, err := strconv.Atoi(idParam)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid schedule ID"})
 		return
 	}
+	schedule, err := service.GetScheduleByID(ctrl.DB, uint(id))
+	if err != nil {
+		ctx.JSON(http.StatusNotFound, gin.H{"error": "Schedule not found"})
+		return
+	}
+	if schedule.UserID != uint(userID) {
+		ctx.JSON(http.StatusForbidden, gin.H{"error": "Access denied: Schedule not assigned to user"})
+		return
+	}
 	var req models.VisitLocationRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid location data"})
+		return
+	}
+	if req.Latitude < -90 || req.Latitude > 90 || req.Longitude < -180 || req.Longitude > 180 {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid latitude or longitude"})
 		return
 	}
 	err = service.StartVisit(ctrl.DB, uint(id), req.Latitude, req.Longitude)
@@ -158,18 +204,38 @@ func (ctrl *Controller) StartVisit(ctx *gin.Context) {
 // @Param request body models.VisitLocationRequest true "End location coordinates"
 // @Success 200 {object} map[string]string "Visit ended"
 // @Failure 400 {object} map[string]string "Invalid request"
+// @Failure 401 {object} map[string]string
+// @Failure 403 {object} map[string]string
 // @Failure 500 {object} map[string]string "Server error"
-// @Router /schedules/end/{id} [post]
+// @Router /api/user/schedules/{id}/end [post]
 func (ctrl *Controller) EndVisit(ctx *gin.Context) {
+	userID, err := GetUserIDFromJWT(ctx)
+	if err != nil {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		return
+	}
 	idParam := ctx.Param("id")
 	id, err := strconv.Atoi(idParam)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid schedule ID"})
 		return
 	}
+	schedule, err := service.GetScheduleByID(ctrl.DB, uint(id))
+	if err != nil {
+		ctx.JSON(http.StatusNotFound, gin.H{"error": "Schedule not found"})
+		return
+	}
+	if schedule.UserID != uint(userID) {
+		ctx.JSON(http.StatusForbidden, gin.H{"error": "Access denied: Schedule not assigned to user"})
+		return
+	}
 	var req models.VisitLocationRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid location data"})
+		return
+	}
+	if req.Latitude < -90 || req.Latitude > 90 || req.Longitude < -180 || req.Longitude > 180 {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid latitude or longitude"})
 		return
 	}
 	err = service.EndVisit(ctrl.DB, uint(id), req.Latitude, req.Longitude)

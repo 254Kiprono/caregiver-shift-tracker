@@ -13,7 +13,18 @@ import (
 	"gorm.io/gorm"
 )
 
-// RegisterUser handles user registration
+// RegisterUser godoc
+// @Summary Register a new user
+// @Description Register a new caregiver user
+// @Tags Users
+// @Accept json
+// @Produce json
+// @Param request body models.RegisterUserRequest true "User registration info"
+// @Success 201 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @Failure 409 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /api/user/register [post]
 func (c *Controller) RegisterUser(ctx *gin.Context) {
 	var req models.RegisterUserRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
@@ -53,8 +64,18 @@ func (c *Controller) RegisterUser(ctx *gin.Context) {
 	ctx.JSON(http.StatusCreated, gin.H{"message": "User registered successfully"})
 }
 
-// LoginUser handles user login
-
+// LoginUser godoc
+// @Summary Login a user
+// @Description Authenticate a caregiver and return JWT tokens and profile (user details, schedules, tasks)
+// @Tags Users
+// @Accept json
+// @Produce json
+// @Param request body models.LoginRequest true "Login credentials"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]string
+// @Failure 401 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /api/user/login [post]
 func (c *Controller) LoginUser(ctx *gin.Context) {
 	var req models.LoginRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
@@ -82,10 +103,17 @@ func (c *Controller) LoginUser(ctx *gin.Context) {
 		return
 	}
 
-	// Store refresh token in DB (optional for future logout/refresh logic)
+	// Store refresh token in DB
 	user.RefreshToken = &refreshToken
 	if err := c.DB.Save(&user).Error; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to store refresh token"})
+		return
+	}
+
+	// Fetch schedules with tasks
+	schedules, err := service.GetAllSchedules(c.DB, int(user.ID))
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch schedules"})
 		return
 	}
 
@@ -99,14 +127,25 @@ func (c *Controller) LoginUser(ctx *gin.Context) {
 			"full_name": user.FullName,
 			"mobile":    user.Mobile,
 			"role_id":   user.RoleID,
+			"schedules": schedules,
 		},
 	})
 }
 
+// RegAdmin godoc
+// @Summary Register a new admin
+// @Description Register a new admin user
+// @Tags Users
+// @Accept json
+// @Produce json
+// @Param request body models.RegisterUserRequest true "Admin registration info"
+// @Success 201 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @Failure 409 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /api/admin/register [post]
 func (c *Controller) RegAdmin(ctx *gin.Context) {
 	var req models.RegisterUserRequest
-
-	// Bind and validate request body
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request", "details": err.Error()})
 		return
@@ -118,14 +157,12 @@ func (c *Controller) RegAdmin(ctx *gin.Context) {
 		return
 	}
 
-	// Hash password
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Password encryption failed"})
 		return
 	}
 
-	// Prepare admin user data
 	user := &models.User{
 		Email:    req.Email,
 		Password: string(hashedPassword),
@@ -134,7 +171,6 @@ func (c *Controller) RegAdmin(ctx *gin.Context) {
 		RoleID:   models.ROLE_ADMIN,
 	}
 
-	// Save to database
 	if _, err := service.RegisterUser(c.DB, user); err != nil {
 		if errors.Is(err, gorm.ErrDuplicatedKey) {
 			ctx.JSON(http.StatusConflict, gin.H{"error": "Email already registered"})
