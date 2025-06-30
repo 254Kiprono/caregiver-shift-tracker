@@ -39,6 +39,8 @@ func SetUpRoutes(r *gin.Engine, ctrl *controller.Controller, DB *gorm.DB) {
 		admin.DELETE("/:id", ctrl.DeleteTask)
 		admin.PUT("/:id", ctrl.UpdateTask)
 		admin.POST("/create/schedule", ctrl.CreateSchedule)
+		admin.POST("/:taskId/update", ctrl.UpdateTaskStatus)
+
 	}
 
 	// User routes
