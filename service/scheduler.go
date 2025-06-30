@@ -68,21 +68,21 @@ func GetUpcomingSchedules(db *gorm.DB, userID int) ([]models.Schedule, error) {
 	return schedules, err
 }
 
-func GetMissedSchedules(db *gorm.DB, userID int) ([]models.Schedule, error) {
-	now := time.Now()
+func GetMissedSchedules(db *gorm.DB, userID int, loc *time.Location) ([]models.Schedule, error) {
+	now := time.Now().In(loc)
 	var schedules []models.Schedule
 	err := db.Preload("Tasks").
-		Where("user_id = ? AND shift_end < ? AND status != ?", userID, now, "completed").
+		Where("user_id = ? AND end_time < ? AND status != ?", userID, now, models.SCHEDULE_STATUS_COMPLETED).
 		Find(&schedules).Error
 	return schedules, err
 }
 
-func GetTodayCompletedSchedules(db *gorm.DB, userID int) ([]models.Schedule, error) {
-	start := time.Now().Truncate(24 * time.Hour)
-	end := start.Add(24 * time.Hour)
+func GetTodayCompletedSchedules(db *gorm.DB, userID int, loc *time.Location) ([]models.Schedule, error) {
+	today := time.Now().In(loc).Format("2006-01-02")
+
 	var schedules []models.Schedule
 	err := db.Preload("Tasks").
-		Where("user_id = ? AND shift_time BETWEEN ? AND ? AND status = ?", userID, start, end, "completed").
+		Where("user_id = ? AND DATE(shift_time) = ? AND status = ?", userID, today, models.SCHEDULE_STATUS_COMPLETED).
 		Find(&schedules).Error
 	return schedules, err
 }

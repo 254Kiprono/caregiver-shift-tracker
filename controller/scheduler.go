@@ -6,6 +6,7 @@ import (
 	"caregiver-shift-tracker/service"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -298,7 +299,10 @@ func (ctrl *Controller) GetMissedSchedules(ctx *gin.Context) {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		return
 	}
-	schedules, err := service.GetMissedSchedules(ctrl.DB, userID)
+
+	tz := ctx.MustGet("timezone").(*time.Location)
+
+	schedules, err := service.GetMissedSchedules(ctrl.DB, userID, tz)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch missed schedules"})
 		return
@@ -322,7 +326,10 @@ func (ctrl *Controller) GetTodayCompletedSchedules(ctx *gin.Context) {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		return
 	}
-	schedules, err := service.GetTodayCompletedSchedules(ctrl.DB, userID)
+
+	tz := ctx.MustGet("timezone").(*time.Location)
+
+	schedules, err := service.GetTodayCompletedSchedules(ctrl.DB, userID, tz)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch completed schedules"})
 		return
