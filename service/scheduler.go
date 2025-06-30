@@ -2,6 +2,7 @@ package service
 
 import (
 	"caregiver-shift-tracker/models"
+	"fmt"
 	"time"
 
 	"gorm.io/gorm"
@@ -77,9 +78,13 @@ func GetMissedSchedules(db *gorm.DB, userID int, loc *time.Location) ([]models.S
 	return schedules, err
 }
 
-func GetTodayCompletedSchedules(db *gorm.DB, userID int, loc *time.Location) ([]models.Schedule, error) {
-	start := time.Now().In(loc).Truncate(24 * time.Hour)
+func GetTodayCompletedSchedules(db *gorm.DB, userID int) ([]models.Schedule, error) {
+	start := time.Now().UTC().Truncate(24 * time.Hour)
 	end := start.Add(24 * time.Hour)
+
+	fmt.Println("Start UTC:", start)
+	fmt.Println("End   UTC:", end)
+	fmt.Println("User ID  :", userID)
 
 	var schedules []models.Schedule
 	err := db.Preload("Tasks").
