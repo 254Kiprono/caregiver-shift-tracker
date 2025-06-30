@@ -12,7 +12,7 @@ import (
 
 // CreateSchedule godoc
 // @Summary Create a schedule
-// @Description Admin creates a new schedule for a caregiver
+// @Description Create a new schedule for a caregiver
 // @Tags Schedules
 // @Security BearerAuth
 // @Accept json
@@ -21,33 +21,32 @@ import (
 // @Success 201 {object} map[string]interface{}
 // @Failure 400 {object} map[string]string
 // @Failure 401 {object} map[string]string
-// @Failure 403 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /tasks/create/schedule [post]
 func (ctrl *Controller) CreateSchedule(ctx *gin.Context) {
-	_, roleID, err := GetUserIDAndRoleFromJWT(ctx)
+	_, err := GetUserIDFromJWT(ctx)
 	if err != nil {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		return
 	}
-	if roleID != models.ROLE_ADMIN {
-		ctx.JSON(http.StatusForbidden, gin.H{"error": "Access denied: Admin role required"})
-		return
-	}
+
 	var req models.Schedule
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request data", "details": err.Error()})
 		return
 	}
+
 	if req.StartTime != nil && req.EndTime != nil && req.StartTime.After(*req.EndTime) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Shift start time must be before end time"})
 		return
 	}
+
 	if err := service.CreateSchedule(ctrl.DB, &req); err != nil {
 		logger.ErrorLogger.Printf("Failed to create schedule: %v", err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create schedule", "details": err.Error()})
 		return
 	}
+
 	ctx.JSON(http.StatusCreated, gin.H{
 		"message":     "Schedule created successfully",
 		"schedule_id": req.ID,

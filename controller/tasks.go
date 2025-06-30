@@ -38,7 +38,7 @@ func (ctrl *Controller) CreateTask(ctx *gin.Context) {
 
 // AssignTasksToSchedule godoc
 // @Summary Assign tasks to a schedule
-// @Description Admin assigns one or more tasks to a specific schedule ID
+// @Description Assign one or more tasks to a specific schedule ID
 // @Tags Tasks
 // @Security BearerAuth
 // @Accept json
@@ -48,25 +48,22 @@ func (ctrl *Controller) CreateTask(ctx *gin.Context) {
 // @Success 200 {object} map[string]string
 // @Failure 400 {object} map[string]string
 // @Failure 401 {object} map[string]string
-// @Failure 403 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /tasks/assign/{id} [post]
 func (ctrl *Controller) AssignTasksToSchedule(ctx *gin.Context) {
-	_, roleID, err := GetUserIDAndRoleFromJWT(ctx)
+	_, err := GetUserIDFromJWT(ctx)
 	if err != nil {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		return
 	}
-	if roleID != models.ROLE_ADMIN {
-		ctx.JSON(http.StatusForbidden, gin.H{"error": "Access denied: Admin role required"})
-		return
-	}
+
 	idParam := ctx.Param("id")
 	scheduleID, err := strconv.Atoi(idParam)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid schedule ID"})
 		return
 	}
+
 	var req struct {
 		Tasks []models.Task `json:"tasks" validate:"required,dive,required"`
 	}
@@ -74,11 +71,13 @@ func (ctrl *Controller) AssignTasksToSchedule(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid task data", "details": err.Error()})
 		return
 	}
+
 	err = service.AssignTasksToSchedule(ctrl.DB, uint(scheduleID), req.Tasks)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to assign tasks", "details": err.Error()})
 		return
 	}
+
 	ctx.JSON(http.StatusOK, gin.H{"message": "Tasks assigned successfully"})
 }
 
