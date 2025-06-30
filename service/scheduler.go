@@ -86,3 +86,14 @@ func GetTodayCompletedSchedules(db *gorm.DB, userID int) ([]models.Schedule, err
 		Find(&schedules).Error
 	return schedules, err
 }
+
+func CancelStartVisit(db *gorm.DB, scheduleID uint) error {
+	return db.Model(&models.Schedule{}).
+		Where("id = ?", scheduleID).
+		Updates(map[string]interface{}{
+			"start_time": nil,
+			"start_lat":  nil,
+			"start_lon":  nil,
+			"status":     models.SCHEDULE_STATUS_SCHEDULED,
+		}).Error
+}

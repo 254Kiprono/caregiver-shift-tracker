@@ -316,3 +316,51 @@ func (ctrl *Controller) GetTodayCompletedSchedules(ctx *gin.Context) {
 	}
 	ctx.JSON(http.StatusOK, gin.H{"schedules": schedules})
 }
+
+// CancelStartVisit godoc
+// @Summary Cancel start visit (undo clock-in)
+// @Description Allows caregiver to cancel their clock-in (reset start time and location)
+// @Tags Schedules
+// @Security BearerAuth
+// @Produce json
+// @Param id path int true "Schedule ID"
+// @Success 200 {object} map[string]string "Clock-in canceled"
+// @Failure 400 {object} map[string]string
+// @Failure 401 {object} map[string]string
+// @Failure 403 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /api/user/schedules/{id}/cancel-start [post]
+func (ctrl *Controller) CancelStartVisit(ctx *gin.Context) {
+	userID, err := GetUserIDFromJWT(ctx)
+	if err != nil {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		return
+	}
+
+	idParam := ctx.Param("id")
+	scheduleID, err := strconv.Atoi(idParam)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid schedule ID"})
+		return
+	}
+
+	schedule, err := service.GetScheduleByID(ctrl.DB, uint(scheduleID))
+	if err != nil {
+		ctx.JSON(http.StatusNotFound, gin.H{"error": "Schedule not found"})
+		return
+	}
+
+	if schedule.UserID != uint(userID) {
+		ctx.JSON(http.StatusForbidden, gin.H{"error": "Access denied: Schedule not assigned to user"})
+		return
+	}
+
+	err = service.CancelStartVisit(ctrl.DB, uint(scheduleID))
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to cancel clock-in"})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "Clock-in canceled successfully"})
+}
