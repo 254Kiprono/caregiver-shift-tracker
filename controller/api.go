@@ -4,6 +4,7 @@ import (
 	"caregiver-shift-tracker/utils"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/redis/go-redis/v9"
@@ -41,4 +42,17 @@ func GetUserIDAndRoleFromJWT(ctx *gin.Context) (int, int, error) {
 		return 0, 0, fmt.Errorf("invalid or expired token: %v", err)
 	}
 	return userID, roleID, nil
+}
+
+func GetUserTimeZone(ctx *gin.Context) *time.Location {
+	tz := ctx.GetHeader("X-Timezone")
+	if tz == "" {
+		// fallback to UTC
+		tz = "UTC"
+	}
+	loc, err := time.LoadLocation(tz)
+	if err != nil {
+		loc = time.UTC
+	}
+	return loc
 }

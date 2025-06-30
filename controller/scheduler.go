@@ -6,7 +6,6 @@ import (
 	"caregiver-shift-tracker/service"
 	"net/http"
 	"strconv"
-	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -300,7 +299,7 @@ func (ctrl *Controller) GetMissedSchedules(ctx *gin.Context) {
 		return
 	}
 
-	tz := ctx.MustGet("timezone").(*time.Location)
+	tz := GetUserTimeZone(ctx)
 
 	schedules, err := service.GetMissedSchedules(ctrl.DB, userID, tz)
 	if err != nil {
@@ -327,7 +326,7 @@ func (ctrl *Controller) GetTodayCompletedSchedules(ctx *gin.Context) {
 		return
 	}
 
-	tz := ctx.MustGet("timezone").(*time.Location)
+	tz := GetUserTimeZone(ctx)
 
 	schedules, err := service.GetTodayCompletedSchedules(ctrl.DB, userID, tz)
 	if err != nil {
