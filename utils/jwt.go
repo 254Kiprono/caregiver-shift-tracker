@@ -35,18 +35,22 @@ type Claims struct {
 
 // GenerateJWT generates an access and refresh token
 func GenerateJWT(userID int, roleID int) (string, string, error) {
+	now := time.Now()
+	logger.InfoLogger.Printf("Generating tokens for userID %d, roleID %d at %s", userID, roleID, now.Format(time.RFC3339))
+
 	// Create the access token
 	accessTokenClaims := &Claims{
 		UserID: userID,
 		RoleID: roleID,
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 1)),
-			IssuedAt:  jwt.NewNumericDate(time.Now()),
+			ExpiresAt: jwt.NewNumericDate(now.Add(time.Hour * 1)),
+			IssuedAt:  jwt.NewNumericDate(now),
 		},
 	}
 	accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, accessTokenClaims)
 	signedAccessToken, err := accessToken.SignedString(JWTSecret)
 	if err != nil {
+		logger.ErrorLogger.Printf("Failed to sign access token: %v", err)
 		return "", "", err
 	}
 
@@ -55,16 +59,20 @@ func GenerateJWT(userID int, roleID int) (string, string, error) {
 		UserID: userID,
 		RoleID: roleID,
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 24 * 7)),
-			IssuedAt:  jwt.NewNumericDate(time.Now()),
+			ExpiresAt: jwt.NewNumericDate(now.Add(time.Hour * 24 * 7)),
+			IssuedAt:  jwt.NewNumericDate(now),
 		},
 	}
 	refreshToken := jwt.NewWithClaims(jwt.SigningMethodHS256, refreshTokenClaims)
 	signedRefreshToken, err := refreshToken.SignedString(RefreshJWTSecret)
 	if err != nil {
+		logger.ErrorLogger.Printf("Failed to sign refresh token: %v", err)
 		return "", "", err
 	}
 
+	logger.InfoLogger.Printf("Tokens generated: Access expires at %s, Refresh expires at %s",
+		time.Unix(accessTokenClaims.ExpiresAt.Unix(), 0).Format(time.RFC3339),
+		time.Unix(refreshTokenClaims.ExpiresAt.Unix(), 0).Format(time.RFC3339))
 	return signedAccessToken, signedRefreshToken, nil
 }
 
