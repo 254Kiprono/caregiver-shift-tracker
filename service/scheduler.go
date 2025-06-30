@@ -78,11 +78,12 @@ func GetMissedSchedules(db *gorm.DB, userID int, loc *time.Location) ([]models.S
 }
 
 func GetTodayCompletedSchedules(db *gorm.DB, userID int, loc *time.Location) ([]models.Schedule, error) {
-	today := time.Now().In(loc).Format("2006-01-02")
+	start := time.Now().In(loc).Truncate(24 * time.Hour)
+	end := start.Add(24 * time.Hour)
 
 	var schedules []models.Schedule
 	err := db.Preload("Tasks").
-		Where("user_id = ? AND DATE(shift_time) = ? AND status = ?", userID, today, models.SCHEDULE_STATUS_COMPLETED).
+		Where("user_id = ? AND shift_time BETWEEN ? AND ? AND status = ?", userID, start, end, models.SCHEDULE_STATUS_COMPLETED).
 		Find(&schedules).Error
 	return schedules, err
 }
