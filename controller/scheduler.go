@@ -160,35 +160,48 @@ func (ctrl *Controller) StartVisit(ctx *gin.Context) {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		return
 	}
+
 	idParam := ctx.Param("id")
 	id, err := strconv.Atoi(idParam)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid schedule ID"})
 		return
 	}
+
 	schedule, err := service.GetScheduleByID(ctrl.DB, uint(id))
 	if err != nil {
 		ctx.JSON(http.StatusNotFound, gin.H{"error": "Schedule not found"})
 		return
 	}
+
 	if schedule.UserID != uint(userID) {
 		ctx.JSON(http.StatusForbidden, gin.H{"error": "Access denied: Schedule not assigned to user"})
 		return
 	}
+
+	//Check if there are tasks assigned to this schedule
+	if len(schedule.Tasks) == 0 {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "You can’t start this visit yet. Tasks have not been assigned."})
+		return
+	}
+
 	var req models.VisitLocationRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid location data"})
 		return
 	}
+
 	if req.Latitude < -90 || req.Latitude > 90 || req.Longitude < -180 || req.Longitude > 180 {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid latitude or longitude"})
 		return
 	}
+
 	err = service.StartVisit(ctrl.DB, uint(id), req.Latitude, req.Longitude)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to start visit"})
 		return
 	}
+
 	ctx.JSON(http.StatusOK, gin.H{"message": "Visit started"})
 }
 
