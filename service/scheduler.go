@@ -109,7 +109,6 @@ func GetMissedSchedules(db *gorm.DB, userID int, loc *time.Location) ([]models.S
 				fmt.Printf("WARNING: Failed to update status for Schedule ID %d: %v\n", s.ID, updateErr)
 			} else {
 				s.Status = models.SCHEDULE_STATUS_MISSED
-				fmt.Printf("DEBUG: Schedule ID %d marked as MISSED.\n", s.ID)
 			}
 		}
 		missedSchedules = append(missedSchedules, *s)
