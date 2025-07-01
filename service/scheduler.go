@@ -2,6 +2,7 @@ package service
 
 import (
 	"caregiver-shift-tracker/models"
+	"fmt"
 	"time"
 
 	"gorm.io/gorm"
@@ -72,12 +73,63 @@ func GetUpcomingSchedules(db *gorm.DB, userID int) ([]models.Schedule, error) {
 }
 
 func GetMissedSchedules(db *gorm.DB, userID int, loc *time.Location) ([]models.Schedule, error) {
-	now := time.Now().In(loc)
+	nowInUserTZ := time.Now().In(loc)
+	nowUTC := nowInUserTZ.UTC()
+
 	var schedules []models.Schedule
-	err := db.Preload("Tasks").
-		Where("user_id = ? AND end_time < ? AND status != ?", userID, now, models.SCHEDULE_STATUS_COMPLETED).
+	err := db.Debug().Preload("Tasks").
+		Where("user_id = ? AND end_time < ? AND status IN (?)", userID, nowUTC,
+			[]string{
+				models.SCHEDULE_STATUS_SCHEDULED,
+				models.SCHEDULE_STATUS_IN_PROGRESS,
+			}).
 		Find(&schedules).Error
-	return schedules, err
+
+	if err != nil {
+		fmt.Printf("ERROR: Database query failed for GetMissedSchedules: %v\n", err)
+		return nil, err
+	}
+
+	fmt.Printf("DEBUG: GetMissedSchedules found %d potential missed schedules from DB.\n", len(schedules))
+
+	var missedSchedules []models.Schedule
+	for i := range schedules {
+		s := &schedules[i]
+
+		if s.Status != models.SCHEDULE_STATUS_MISSED {
+			updateErr := db.Model(&s).Update("status", models.SCHEDULE_STATUS_MISSED).Error
+			if updateErr != nil {
+			} else {
+				s.Status = models.SCHEDULE_STATUS_MISSED
+				fmt.Printf("DEBUG: Schedule ID %d marked as MISSED.\n", s.ID)
+			}
+		}
+		missedSchedules = append(missedSchedules, *s)
+	}
+
+	for i := range missedSchedules {
+		missedSchedules[i].ShiftTime = missedSchedules[i].ShiftTime.In(time.UTC).In(loc)
+		if missedSchedules[i].StartTime != nil {
+			originalStartTime := *missedSchedules[i].StartTime
+			convertedStartTime := originalStartTime.In(time.UTC).In(loc)
+			missedSchedules[i].StartTime = &convertedStartTime
+		}
+		if missedSchedules[i].EndTime != nil {
+			originalEndTime := *missedSchedules[i].EndTime
+			convertedEndTime := originalEndTime.In(time.UTC).In(loc)
+			missedSchedules[i].EndTime = &convertedEndTime
+		}
+		for j := range missedSchedules[i].Tasks {
+			if missedSchedules[i].Tasks[j].CompletedAt != nil {
+				originalCompletedAt := *missedSchedules[i].Tasks[j].CompletedAt
+				convertedCompletedAt := originalCompletedAt.In(time.UTC).In(loc)
+				missedSchedules[i].Tasks[j].CompletedAt = &convertedCompletedAt
+			}
+		}
+	}
+
+	fmt.Printf("DEBUG: GetMissedSchedules returning %d schedules after conversion.\n", len(missedSchedules))
+	return missedSchedules, nil
 }
 
 func GetTodayCompletedSchedules(db *gorm.DB, userID int, loc *time.Location) ([]models.Schedule, error) {
