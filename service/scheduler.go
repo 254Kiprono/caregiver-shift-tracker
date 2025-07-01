@@ -13,9 +13,17 @@ func CreateSchedule(db *gorm.DB, schedule *models.Schedule) error {
 	return db.Create(schedule).Error
 }
 
-func GetAllSchedules(db *gorm.DB, userID int) ([]models.Schedule, error) {
+func GetAllSchedules(db *gorm.DB, userID int, loc *time.Location) ([]models.Schedule, error) {
+	nowInUserTZ := time.Now().In(loc)
+	startOfDayLocal := time.Date(nowInUserTZ.Year(), nowInUserTZ.Month(), nowInUserTZ.Day(), 0, 0, 0, 0, loc)
+	endOfDayLocal := time.Date(nowInUserTZ.Year(), nowInUserTZ.Month(), nowInUserTZ.Day(), 23, 59, 59, 0, loc)
+	startOfDayUTC := startOfDayLocal.UTC()
+	endOfDayUTC := endOfDayLocal.UTC()
+
 	var schedules []models.Schedule
-	err := db.Preload("Tasks").Where("user_id = ?", userID).Find(&schedules).Error
+	err := db.Preload("Tasks").
+		Where("user_id = ? AND shift_time BETWEEN ? AND ?", userID, startOfDayUTC, endOfDayUTC).
+		Find(&schedules).Error
 	return schedules, err
 }
 
