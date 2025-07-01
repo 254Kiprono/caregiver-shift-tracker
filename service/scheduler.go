@@ -86,7 +86,7 @@ func GetMissedSchedules(db *gorm.DB, userID int, loc *time.Location) ([]models.S
 
 	var schedules []models.Schedule
 	err := db.Debug().Preload("Tasks").
-		Where("user_id = ? AND end_time BETWEEN ? AND ? AND end_time < ? AND status IN (?)",
+		Where("user_id = ? AND shift_time BETWEEN ? AND ? AND shift_time < ? AND status IN (?)",
 			userID,
 			startOfDayUTC, endOfDayUTC, cutoffTime,
 			[]string{
