@@ -60,11 +60,14 @@ func EndVisit(db *gorm.DB, scheduleID uint, lat, lon float64) error {
 }
 
 func GetUpcomingSchedules(db *gorm.DB, userID int) ([]models.Schedule, error) {
-	today := time.Now().Truncate(24 * time.Hour)
+	now := time.Now()
+
 	var schedules []models.Schedule
 	err := db.Preload("Tasks").
-		Where("user_id = ? AND shift_time >= ?", userID, today).
+		Where("user_id = ? AND shift_time >= ?", userID, now).
+		Where("status = ?", models.SCHEDULE_STATUS_SCHEDULED).
 		Find(&schedules).Error
+
 	return schedules, err
 }
 
