@@ -97,3 +97,5 @@ func CancelStartVisit(db *gorm.DB, scheduleID uint) error {
 			"status":     models.SCHEDULE_STATUS_SCHEDULED,
 		}).Error
 }
+
+//new changes
