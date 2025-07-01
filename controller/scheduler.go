@@ -94,7 +94,10 @@ func (ctrl *Controller) GetTodaySchedules(ctx *gin.Context) {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		return
 	}
-	schedules, err := service.GetTodaySchedules(ctrl.DB, userID)
+
+	loc := GetUserTimeZone(ctx)
+
+	schedules, err := service.GetTodaySchedules(ctrl.DB, userID, loc)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch today's schedules"})
 		return
