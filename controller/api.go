@@ -31,19 +31,6 @@ func GetUserIDFromJWT(ctx *gin.Context) (int, error) {
 	return userID, nil
 }
 
-func GetUserIDAndRoleFromJWT(ctx *gin.Context) (int, int, error) {
-	authHeader := ctx.GetHeader("authorization")
-	if authHeader == "" || !strings.HasPrefix(authHeader, "Bearer ") {
-		return 0, 0, fmt.Errorf("authorization header missing or invalid")
-	}
-	token := strings.TrimPrefix(authHeader, "Bearer ")
-	userID, roleID, err := utils.ExtractJWT(token, false)
-	if err != nil {
-		return 0, 0, fmt.Errorf("invalid or expired token: %v", err)
-	}
-	return userID, roleID, nil
-}
-
 func GetUserTimeZone(ctx *gin.Context) *time.Location {
 	tz := ctx.GetHeader("X-Timezone")
 	if tz == "" {

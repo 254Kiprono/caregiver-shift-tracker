@@ -3,6 +3,7 @@ package routes
 import (
 	"caregiver-shift-tracker/controller"
 	"caregiver-shift-tracker/logger"
+	"caregiver-shift-tracker/utils"
 	"net/http"
 	"time"
 
@@ -31,7 +32,7 @@ func SetUpRoutes(r *gin.Engine, ctrl *controller.Controller, DB *gorm.DB) {
 		c.JSON(http.StatusOK, gin.H{"message": "System Health Status Check Successful"})
 	})
 
-	// Open Task routes (accessible without auth, but some might require it internally)
+	// Open Task routes
 	admin := r.Group("/tasks")
 	{
 		admin.POST("/", ctrl.CreateTask)
@@ -42,24 +43,25 @@ func SetUpRoutes(r *gin.Engine, ctrl *controller.Controller, DB *gorm.DB) {
 		admin.POST("/:taskId/update", ctrl.UpdateTaskStatus)
 	}
 
-	// ALL API ENDPOINTS (including schedule ones) will now be public (no auth)
-	// FOR TESTING PURPOSES ONLY!
+	// Public API (no auth)
 	userRoutes := r.Group("/api")
 	{
 		userRoutes.POST("/user/register", ctrl.RegisterUser)
 		userRoutes.POST("/admin/register", ctrl.RegAdmin)
 		userRoutes.POST("/login", ctrl.LoginUser)
-
-		// All protected schedule routes here for open testing
-		userRoutes.GET("/user/schedules", ctrl.GetAllSchedules)
-		userRoutes.GET("/user/schedules/today", ctrl.GetTodaySchedules)
-		userRoutes.GET("/user/schedules/upcoming", ctrl.GetUpcomingSchedules)
-		userRoutes.GET("/user/schedules/missed", ctrl.GetMissedSchedules)
-		userRoutes.GET("/user/schedules/completed/today", ctrl.GetTodayCompletedSchedules)
-		userRoutes.GET("/user/schedules/:id", ctrl.GetScheduleDetails)
-		userRoutes.POST("/user/schedules/:id/start", ctrl.StartVisit)
-		userRoutes.POST("/user/schedules/:id/end", ctrl.EndVisit)
-		userRoutes.POST("/user/schedules/:id/cancel-start", ctrl.CancelStartVisit)
 	}
 
+	protected := r.Group("/api")
+	protected.Use(utils.AuthMiddlewareForSwagger())
+	{
+		protected.GET("/user/schedules", ctrl.GetAllSchedules)
+		protected.GET("/user/schedules/today", ctrl.GetTodaySchedules)
+		protected.GET("/user/schedules/upcoming", ctrl.GetUpcomingSchedules)
+		protected.GET("/user/schedules/missed", ctrl.GetMissedSchedules)
+		protected.GET("/user/schedules/completed/today", ctrl.GetTodayCompletedSchedules)
+		protected.GET("/user/schedules/:id", ctrl.GetScheduleDetails)
+		protected.POST("/user/schedules/:id/start", ctrl.StartVisit)
+		protected.POST("/user/schedules/:id/end", ctrl.EndVisit)
+		protected.POST("/user/schedules/:id/cancel-start", ctrl.CancelStartVisit)
+	}
 }

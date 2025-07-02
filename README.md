@@ -58,6 +58,8 @@ Caregivers must log in to access these:
 ---
 
 ## 🧪 Swagger Documentation
+If testing via postman below is the base url
+BaseUrl: https://care-giver.devsinkenya.com
 
 Swagger is available at: https://care-giver.devsinkenya.com/swagger/index.html#/
 
