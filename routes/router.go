@@ -3,7 +3,8 @@ package routes
 import (
 	"caregiver-shift-tracker/controller"
 	"caregiver-shift-tracker/logger"
-	"caregiver-shift-tracker/utils"
+
+	// "caregiver-shift-tracker/utils"
 	"net/http"
 	"time"
 
@@ -52,7 +53,7 @@ func SetUpRoutes(r *gin.Engine, ctrl *controller.Controller, DB *gorm.DB) {
 	}
 
 	protected := r.Group("/api")
-	protected.Use(utils.AuthMiddlewareForSwagger())
+	// protected.Use(utils.AuthMiddlewareForSwagger())
 	{
 		protected.GET("/user/schedules", ctrl.GetAllSchedules)
 		protected.GET("/user/schedules/today", ctrl.GetTodaySchedules)
