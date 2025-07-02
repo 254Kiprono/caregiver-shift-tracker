@@ -164,7 +164,7 @@ paths:
       summary: Register a new admin
       tags:
       - Users
-  /api/user/login:
+  /api/login:
     post:
       consumes:
       - application/json

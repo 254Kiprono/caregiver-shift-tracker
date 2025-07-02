@@ -75,7 +75,7 @@ func (c *Controller) RegisterUser(ctx *gin.Context) {
 // @Failure 400 {object} map[string]string
 // @Failure 401 {object} map[string]string
 // @Failure 500 {object} map[string]string
-// @Router /api/user/login [post]
+// @Router /api/login [post]
 // @Security BearerAuth
 func (c *Controller) LoginUser(ctx *gin.Context) {
 	var req models.LoginRequest
