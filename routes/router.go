@@ -50,7 +50,7 @@ func SetUpRoutes(r *gin.Engine, ctrl *controller.Controller, DB *gorm.DB) {
 		userRoutes.POST("/admin/register", ctrl.RegAdmin)
 		userRoutes.POST("/login", ctrl.LoginUser)
 
-		// Moved all protected schedule routes here for open testing
+		// All protected schedule routes here for open testing
 		userRoutes.GET("/user/schedules", ctrl.GetAllSchedules)
 		userRoutes.GET("/user/schedules/today", ctrl.GetTodaySchedules)
 		userRoutes.GET("/user/schedules/upcoming", ctrl.GetUpcomingSchedules)
