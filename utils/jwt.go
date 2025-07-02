@@ -150,6 +150,25 @@ func AdminOnly() gin.HandlerFunc {
 	}
 }
 
+func AuthMiddlewareForSwagger() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// Allow unauthenticated Swagger requests
+		if strings.HasPrefix(c.Request.URL.Path, "/swagger/") {
+			c.Next()
+			return
+		}
+
+		// Check for Bearer token
+		authHeader := c.GetHeader("Authorization")
+		if authHeader == "" || !strings.HasPrefix(authHeader, "Bearer ") {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Missing or invalid Authorization header"})
+			return
+		}
+
+		c.Next()
+	}
+}
+
 func InitJWTConfig(c *config.Config) {
 	cfg = c
 }
