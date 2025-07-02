@@ -1,5 +1,32 @@
 basePath: /
 definitions:
+  models.LoginRequest:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  models.RegisterUserRequest:
+    properties:
+      email:
+        type: string
+      full_name:
+        type: string
+      mobile:
+        type: string
+      password:
+        minLength: 6
+        type: string
+    required:
+    - email
+    - full_name
+    - mobile
+    - password
+    type: object
   models.Schedule:
     properties:
       client_name:
@@ -32,6 +59,7 @@ definitions:
         - in_progress
         - completed
         - cancelled
+        - missed
         type: string
       tasks:
         items:
@@ -88,13 +116,143 @@ info:
   contact:
     name: Devs In Kenya
     url: http://devsinkenya.com
-  description: API for Electronic Visit Verification and caregiver scheduling
+  description: API for caregiver scheduling and electronic visit verification. All
+    endpoints except /api/user/schedules/* are open for testing; /api/user/schedules/*
+    requires BearerAuth with JWT.
   title: Caregiver Shift Tracker API
   version: "1.0"
 paths:
-  /schedules:
+  /api/admin/register:
+    post:
+      consumes:
+      - application/json
+      description: Register a new admin user
+      parameters:
+      - description: Admin registration info
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.RegisterUserRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "409":
+          description: Conflict
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Register a new admin
+      tags:
+      - Users
+  /api/user/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate a caregiver and return JWT tokens and basic profile
+        info
+      parameters:
+      - description: Login credentials
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Login a user
+      tags:
+      - Users
+  /api/user/register:
+    post:
+      consumes:
+      - application/json
+      description: Register a new caregiver user
+      parameters:
+      - description: User registration info
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.RegisterUserRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "409":
+          description: Conflict
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Register a new user
+      tags:
+      - Users
+  /api/user/schedules:
     get:
-      description: Fetch all schedules for the authenticated user
+      description: Fetch all schedules for the authenticated caregiver
       produces:
       - application/json
       responses:
@@ -103,8 +261,14 @@ paths:
           schema:
             additionalProperties: true
             type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
         "500":
-          description: Server error
+          description: Internal Server Error
           schema:
             additionalProperties:
               type: string
@@ -114,9 +278,9 @@ paths:
       summary: Get all schedules
       tags:
       - Schedules
-  /schedules/{id}:
+  /api/user/schedules/{id}:
     get:
-      description: Fetch a specific schedule by ID
+      description: Fetch a specific schedule by ID for the authenticated caregiver
       parameters:
       - description: Schedule ID
         in: path
@@ -136,6 +300,18 @@ paths:
             additionalProperties:
               type: string
             type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties:
+              type: string
+            type: object
         "404":
           description: Not found
           schema:
@@ -147,7 +323,61 @@ paths:
       summary: Get schedule details
       tags:
       - Schedules
-  /schedules/end/{id}:
+  /api/user/schedules/{id}/cancel-start:
+    post:
+      description: Allows caregiver to cancel their clock-in (reset start time and
+        location)
+      parameters:
+      - description: Schedule ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Clock-in canceled
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Cancel start visit (undo clock-in)
+      tags:
+      - Schedules
+  /api/user/schedules/{id}/end:
     post:
       consumes:
       - application/json
@@ -179,6 +409,18 @@ paths:
             additionalProperties:
               type: string
             type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties:
+              type: string
+            type: object
         "500":
           description: Server error
           schema:
@@ -190,7 +432,7 @@ paths:
       summary: End visit
       tags:
       - Schedules
-  /schedules/start/{id}:
+  /api/user/schedules/{id}/start:
     post:
       consumes:
       - application/json
@@ -222,6 +464,18 @@ paths:
             additionalProperties:
               type: string
             type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties:
+              type: string
+            type: object
         "500":
           description: Server error
           schema:
@@ -233,9 +487,66 @@ paths:
       summary: Start visit
       tags:
       - Schedules
-  /schedules/today:
+  /api/user/schedules/completed/today:
     get:
-      description: Fetch today's schedules for the authenticated user
+      description: Fetch all completed schedules for today for the authenticated caregiver
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of today's completed schedules
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get today's completed schedules
+      tags:
+      - Schedules
+  /api/user/schedules/missed:
+    get:
+      description: Fetch all missed schedules for the authenticated caregiver (end
+        time passed and not completed)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of missed schedules
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get missed schedules
+      tags:
+      - Schedules
+  /api/user/schedules/today:
+    get:
+      description: Fetch today's schedules for the authenticated caregiver
       produces:
       - application/json
       responses:
@@ -244,8 +555,14 @@ paths:
           schema:
             additionalProperties: true
             type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
         "500":
-          description: Server error
+          description: Internal Server Error
           schema:
             additionalProperties:
               type: string
@@ -255,11 +572,40 @@ paths:
       summary: Get today's schedules
       tags:
       - Schedules
+  /api/user/schedules/upcoming:
+    get:
+      description: Fetch all upcoming schedules for the authenticated caregiver (from
+        today onward)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of upcoming schedules
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get upcoming schedules
+      tags:
+      - Schedules
   /tasks:
     post:
       consumes:
       - application/json
-      description: Allows admin to create a task for a caregiver schedule
+      description: Creates a task for a caregiver schedule
       parameters:
       - description: Task Info
         in: body
@@ -281,26 +627,12 @@ paths:
             additionalProperties:
               type: string
             type: object
-        "401":
-          description: Unauthorized
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "403":
-          description: Forbidden
-          schema:
-            additionalProperties:
-              type: string
-            type: object
         "500":
           description: Internal Server Error
           schema:
             additionalProperties:
               type: string
             type: object
-      security:
-      - BearerAuth: []
       summary: Create a new task
       tags:
       - Tasks
@@ -334,15 +666,13 @@ paths:
             additionalProperties:
               type: string
             type: object
-      security:
-      - BearerAuth: []
       summary: Delete a task
       tags:
       - Tasks
     put:
       consumes:
       - application/json
-      description: Updates task details by its ID
+      description: Updates task details by its ID, restricted to the assigned caregiver
       parameters:
       - description: Task ID
         in: path
@@ -370,6 +700,24 @@ paths:
             additionalProperties:
               type: string
             type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
         "500":
           description: Internal Server Error
           schema:
@@ -381,11 +729,78 @@ paths:
       summary: Update a task
       tags:
       - Tasks
+  /tasks/{taskId}/update:
+    post:
+      consumes:
+      - application/json
+      description: Updates the status of a task (completed or not_completed with reason),
+        restricted to the assigned caregiver
+      parameters:
+      - description: Task ID
+        in: path
+        name: taskId
+        required: true
+        type: integer
+      - description: Task status and optional reason
+        in: body
+        name: request
+        required: true
+        schema:
+          properties:
+            reason:
+              type: string
+            status:
+              type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update task status
+      tags:
+      - Tasks
   /tasks/assign/{id}:
     post:
       consumes:
       - application/json
-      description: Assigns one or more tasks to a specific schedule ID
+      description: Assign one or more tasks to a specific schedule ID
       parameters:
       - description: Schedule ID
         in: path
@@ -418,6 +833,12 @@ paths:
             additionalProperties:
               type: string
             type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
         "500":
           description: Internal Server Error
           schema:
@@ -429,6 +850,49 @@ paths:
       summary: Assign tasks to a schedule
       tags:
       - Tasks
+  /tasks/create/schedule:
+    post:
+      consumes:
+      - application/json
+      description: Create a new schedule for a caregiver
+      parameters:
+      - description: Schedule Info
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.Schedule'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create a schedule
+      tags:
+      - Schedules
 securityDefinitions:
   BearerAuth:
     in: header
