@@ -79,6 +79,7 @@ func (ctrl *Controller) GetAllSchedules(ctx *gin.Context) {
 		return
 	}
 	ctx.JSON(http.StatusOK, gin.H{"schedules": schedules})
+	logger.InfoLogger.Printf("Fetched %d schedules", len(schedules))
 }
 
 // GetTodaySchedules godoc
