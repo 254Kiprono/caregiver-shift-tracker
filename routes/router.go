@@ -66,5 +66,3 @@ func SetUpRoutes(r *gin.Engine, ctrl *controller.Controller, DB *gorm.DB) {
 		protected.POST("/user/schedules/:id/cancel-start", ctrl.CancelStartVisit)
 	}
 }
-
-//Adjust
