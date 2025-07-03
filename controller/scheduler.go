@@ -416,3 +416,58 @@ func (ctrl *Controller) FetchSchedulesWithTasks(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, gin.H{"schedules": schedules})
 }
+
+// UpdateScheduleStatus godoc
+// @Summary Update schedule status
+// @Description Update the status of a specific schedule for the authenticated caregiver
+// @Tags Schedules
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param id path int true "Schedule ID"
+// @Param request body models.ScheduleStatusUpdateRequest true "New schedule status"
+// @Success 200 {object} map[string]string "Schedule status updated"
+// @Failure 400 {object} map[string]string "Invalid request or ID"
+// @Failure 401 {object} map[string]string "Unauthorized"
+// @Failure 403 {object} map[string]string "Access denied"
+// @Failure 500 {object} map[string]string "Server error"
+// @Router /api/user/schedules/{id}/status [put]
+func (ctrl *Controller) UpdateScheduleStatus(ctx *gin.Context) {
+	userID, err := GetUserIDFromJWT(ctx)
+	if err != nil {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		return
+	}
+
+	idParam := ctx.Param("id")
+	scheduleID, err := strconv.Atoi(idParam)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid schedule ID"})
+		return
+	}
+
+	var req models.ScheduleStatusUpdateRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request data", "details": err.Error()})
+		return
+	}
+
+	// Optional: Fetch schedule to confirm ownership
+	schedule, err := service.GetScheduleByID(ctrl.DB, uint(scheduleID))
+	if err != nil {
+		ctx.JSON(http.StatusNotFound, gin.H{"error": "Schedule not found"})
+		return
+	}
+	if schedule.UserID != uint(userID) {
+		ctx.JSON(http.StatusForbidden, gin.H{"error": "Access denied: Schedule not assigned to you"})
+		return
+	}
+
+	err = service.UpdateScheduleStatus(ctrl.DB, userID, uint(scheduleID), req.Status)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update schedule status"})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "Schedule status updated successfully"})
+}

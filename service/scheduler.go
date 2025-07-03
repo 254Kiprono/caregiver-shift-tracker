@@ -202,3 +202,9 @@ func FetchSchedulesWithTasks(db *gorm.DB, userID int) ([]models.Schedule, error)
 	err := db.Preload("Tasks").Where("user_id = ?", userID).Find(&schedules).Error
 	return schedules, err
 }
+
+func UpdateScheduleStatus(db *gorm.DB, userID int, scheduleID uint, status string) error {
+	return db.Model(&models.Schedule{}).
+		Where("user_id = ? AND id = ?", userID, scheduleID).
+		Updates(map[string]interface{}{"status": status}).Error
+}

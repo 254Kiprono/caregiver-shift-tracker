@@ -31,6 +31,10 @@ type Schedule struct {
 	Tasks      []Task     `gorm:"foreignKey:ScheduleID;constraint:OnDelete:CASCADE" json:"tasks"`
 }
 
+type ScheduleStatusUpdateRequest struct {
+	Status string `json:"status" binding:"required,oneof=scheduled in_progress completed cancelled missed"`
+}
+
 type VisitLocationRequest struct {
 	Latitude  float64 `json:"latitude" binding:"required"`
 	Longitude float64 `json:"longitude" binding:"required"`
