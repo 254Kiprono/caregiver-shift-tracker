@@ -15,7 +15,7 @@ import (
 
 func SetUpRoutes(r *gin.Engine, ctrl *controller.Controller, DB *gorm.DB) {
 	allowedMethods := []string{http.MethodGet, http.MethodHead, http.MethodPut, http.MethodPatch, http.MethodPost, http.MethodDelete}
-	allowHeaders := []string{"Origin", "Content-Type", "Accept", "Authorization"}
+	allowHeaders := []string{"Origin", "Content-Type", "Accept", "Authorization", "X-Timezone"}
 
 	// CORS
 	corsConfig := cors.Config{
