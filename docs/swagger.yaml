@@ -278,6 +278,35 @@ paths:
       summary: Get all schedules
       tags:
       - Schedules
+  /api/user/schedules-with-tasks:
+    get:
+      description: Fetch all schedules and their associated tasks for the authenticated
+        caregiver
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of schedules with tasks
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get schedules with tasks
+      tags:
+      - Schedules
   /api/user/schedules/{id}:
     get:
       description: Fetch a specific schedule by ID for the authenticated caregiver

@@ -163,3 +163,9 @@ func CancelStartVisit(db *gorm.DB, scheduleID uint) error {
 			"status":     models.SCHEDULE_STATUS_SCHEDULED,
 		}).Error
 }
+
+func FetchSchedulesWithTasks(db *gorm.DB, userID int) ([]models.Schedule, error) {
+	var schedules []models.Schedule
+	err := db.Preload("Tasks").Where("user_id = ?", userID).Find(&schedules).Error
+	return schedules, err
+}

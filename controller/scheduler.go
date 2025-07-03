@@ -390,3 +390,29 @@ func (ctrl *Controller) CancelStartVisit(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "Clock-in canceled successfully"})
 }
+
+// FetchSchedulesWithTasks godoc
+// @Summary Get schedules with tasks
+// @Description Fetch all schedules and their associated tasks for the authenticated caregiver
+// @Tags Schedules
+// @Security BearerAuth
+// @Produce json
+// @Success 200 {object} map[string]interface{} "List of schedules with tasks"
+// @Failure 401 {object} map[string]string "Unauthorized"
+// @Failure 500 {object} map[string]string "Internal server error"
+// @Router /api/user/schedules-with-tasks [get]
+func (ctrl *Controller) FetchSchedulesWithTasks(ctx *gin.Context) {
+	userID, err := GetUserIDFromJWT(ctx)
+	if err != nil {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		return
+	}
+
+	schedules, err := service.FetchSchedulesWithTasks(ctrl.DB, userID)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch schedules with tasks"})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"schedules": schedules})
+}

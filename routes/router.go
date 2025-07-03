@@ -64,5 +64,6 @@ func SetUpRoutes(r *gin.Engine, ctrl *controller.Controller, DB *gorm.DB) {
 		protected.POST("/user/schedules/:id/start", ctrl.StartVisit)
 		protected.POST("/user/schedules/:id/end", ctrl.EndVisit)
 		protected.POST("/user/schedules/:id/cancel-start", ctrl.CancelStartVisit)
+		protected.GET("/user/schedules-with-tasks", ctrl.FetchSchedulesWithTasks)
 	}
 }
