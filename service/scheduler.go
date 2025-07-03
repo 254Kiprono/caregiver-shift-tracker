@@ -144,17 +144,44 @@ func GetMissedSchedules(db *gorm.DB, userID int, loc *time.Location) ([]models.S
 }
 
 func GetTodayCompletedSchedules(db *gorm.DB, userID int, loc *time.Location) ([]models.Schedule, error) {
-	// Use the caregiver's timezone
+	// Current time in user's local timezone
 	now := time.Now().In(loc)
 
-	start := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, loc)
-	end := start.Add(24 * time.Hour)
+	// Start and end of today in user's timezone
+	startOfDay := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, loc)
+	endOfDay := time.Date(now.Year(), now.Month(), now.Day(), 23, 59, 59, 999999999, loc)
+
+	// Convert to UTC for DB filtering
+	startUTC := startOfDay.UTC()
+	endUTC := endOfDay.UTC()
 
 	var schedules []models.Schedule
 
+	// Use end_time to filter completed schedules
 	err := db.Preload("Tasks").
-		Where("user_id = ? AND shift_time BETWEEN ? AND ? AND status = ?", userID, start, end, models.SCHEDULE_STATUS_COMPLETED).
+		Where("user_id = ? AND end_time BETWEEN ? AND ? AND status = ?", userID, startUTC, endUTC, models.SCHEDULE_STATUS_COMPLETED).
 		Find(&schedules).Error
+
+	// Convert times back to user's timezone for display
+	for i := range schedules {
+		schedules[i].ShiftTime = schedules[i].ShiftTime.In(loc)
+
+		if schedules[i].StartTime != nil {
+			start := schedules[i].StartTime.In(loc)
+			schedules[i].StartTime = &start
+		}
+		if schedules[i].EndTime != nil {
+			end := schedules[i].EndTime.In(loc)
+			schedules[i].EndTime = &end
+		}
+
+		for j := range schedules[i].Tasks {
+			if schedules[i].Tasks[j].CompletedAt != nil {
+				t := schedules[i].Tasks[j].CompletedAt.In(loc)
+				schedules[i].Tasks[j].CompletedAt = &t
+			}
+		}
+	}
 
 	return schedules, err
 }
