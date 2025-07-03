@@ -159,7 +159,7 @@ func GetTodayCompletedSchedules(db *gorm.DB, userID int, loc *time.Location) ([]
 
 	// Use end_time to filter completed schedules
 	err := db.Preload("Tasks").
-		Where("user_id = ? AND end_time BETWEEN ? AND ? AND status = ?", userID, startUTC, endUTC, models.SCHEDULE_STATUS_COMPLETED).
+		Where("user_id = ? AND shift_time BETWEEN ? AND ? AND status = ?", userID, startUTC, endUTC, models.SCHEDULE_STATUS_COMPLETED).
 		Find(&schedules).Error
 
 	// Convert times back to user's timezone for display
